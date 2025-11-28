@@ -1,0 +1,288 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Learning Based Face detection for Cashless transaction </title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: 'Roboto', sans-serif;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: #fff;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Top bar */
+    .top-bar {
+        width: 100%;
+        padding: 15px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(0,0,0,0.3);
+    }
+    .location {
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+    }
+    .location span {
+        margin-left: 8px;
+    }
+    .auth-links a {
+        margin-left: 15px;
+        color: #fff;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 16px;
+        background: #48bb78;
+        padding: 8px 15px;
+        border-radius: 6px;
+        transition: 0.3s;
+    }
+    .auth-links a:hover {
+        background: #38a169;
+    }
+
+    /* Offers */
+    .categories {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        margin-top: 20px;
+    }
+    .category {
+        display: none; /* hidden by default */
+        width: 100%;
+        max-width: 1200px;
+    }
+    .category.active {
+        display: block; /* show active category */
+    }
+
+    .slider {
+        position: relative;
+        width: 100%;
+        overflow: hidden;
+        border-radius: 150px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+        background: #9df06a;
+        color: #333;
+    }
+
+    .slides {
+        display: flex;
+        transition: transform 1s ease-in-out;
+    }
+
+    .offer-item {
+        max-width:max-content;
+        min-width: 100%;
+        text-align: center;
+    }
+    .offer-item img {
+        width: 100%;
+        height: 600px; /* BIG SIZE */
+        object-fit: cover;
+    }
+    .offer-item h3 {
+        font-size: 100px;
+        font-weight: bold;
+        margin: 15px 0;
+    }
+
+    /* Dots */
+    .dots {
+        text-align: center;
+        margin: 150px 0;
+    }
+    .dot {
+        height: 14px;
+        width: 14px;
+        margin: 0 5px;
+        background-color: #db2323;
+        border-radius: 50%;
+        display: inline-block;
+        cursor: pointer;
+    }
+    .active-dot { background-color: #667eea; }
+
+    /* Full Screen Offer Popup */
+    .fullscreen-offer {
+        position:fixed;
+        top: 0; left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.95);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        z-index: 9999;
+        display: none;
+        animation: fadeIn 1s;
+    }
+    .fullscreen-offer img {
+        max-width: 90%;
+        max-height: 70%;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .fullscreen-offer h2 {
+        color: #ffeb3b;
+        font-size: 42px;
+        margin-top: 20px;
+        text-shadow: 2px 2px 10px #000;
+        animation: pulse 1.5s infinite;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="top-bar">
+    <div class="location">📍 <span>
+        <h1>D Mart</h1>
+        Vellore - 632014</span></div>
+    <div class="auth-links">
+        <a href="{% url 'signup' %}">Sign Up</a>
+        <a href="{% url 'signin' %}">Sign In</a>
+    </div>
+</div>
+
+<!-- Categories -->
+<div class="categories">
+    <!-- Category 1: Food -->
+    <div class="category active">
+        <div class="slider">
+            <div class="slides">
+                <div class="offer-item">
+                    <img src="{% static 'images/cookie.jpg' %}" alt="Biscuits">
+                     <i>
+                    <h1>Healthy Cookie Healthy Life</h1>
+                   </i>
+                   <article>This best offer you have ever seen</article>
+                </div>
+                <div class="offer-item">
+                    <img src="{% static 'images/biscuit.jpg' %}" alt="Biscuits">
+                    <b><i>
+                    <h1>Biscuits - Buy 2 Get 1 Free</h1>
+                </i>    
+                </b>
+                </div>
+
+
+                <div class="offer-item">
+                    <img src="{% static 'images/rice.jpg' %}" alt="Rice">
+                    <h1>Rice - Flat 20% Off</h1>
+                </div>
+                <div class="offer-item">
+                    <img src="{% static 'images/oil.jpg' %}" alt="Cooking Oil">
+                    <h2>Cooking Oil - ₹100 Off</h2>
+                </div>
+            </div>
+            <div class="dots"></div>
+        </div>
+    </div>
+
+    <!-- Category 2: Electronics -->
+    <div class="category">
+        <div class="slider">
+            <div class="slides">
+                <div class="offer-item">
+                    <img src="{% static 'images/tv.jpg' %}" alt="TV">
+                    <h1>Buy any TV above ₹49999 - Save ₹5000 instant cashback</h1>
+                </div>
+                <div class="offer-item">
+                    <img src="{% static 'images/cargo.jpg' %}" alt="Laptop">
+                    <h1>Mens Cargo @ Just-₹699 </h1>
+                </div>
+                <div class="offer-item">
+                    <img src="{% static 'images/shampo.jpg' %}" alt="Phone">
+                    <h1>Mamaearth Red Onion Shampoo- Buy 1 Get 1 Free</h1>
+                </div>
+            </div>
+            <div class="dots"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Full Screen Exciting Offer -->
+<div class="fullscreen-offer" id="fullscreenOffer">
+    <img src="{% static 'images/festival.jpg' %}" alt="Festival Offer">
+    <h1>🔥 Big Festival Sale - Limited Time! 🔥</h1>
+</div>
+
+<script>
+// Slider logic for each category
+document.querySelectorAll('.category').forEach(category => {
+    const slides = category.querySelector('.slides');
+    const total = category.querySelectorAll('.offer-item').length;
+    const dotsContainer = category.querySelector('.dots');
+
+    let index = 0;
+
+    // Create dots
+    for (let i = 0; i < total; i++) {
+        const dot = document.createElement('span');
+        dot.classList.add('dot');
+        if (i === 0) dot.classList.add('active-dot');
+        dot.addEventListener('click', () => moveToSlide(i));
+        dotsContainer.appendChild(dot);
+    }
+    const dots = dotsContainer.querySelectorAll('.dot');
+
+    function updateSlider() {
+        slides.style.transform = `translateX(-${index * 100}%)`;
+        dots.forEach(dot => dot.classList.remove('active-dot'));
+        dots[index].classList.add('active-dot');
+    }
+
+    function moveToSlide(i) {
+        index = i;
+        updateSlider();
+    }
+
+    setInterval(() => {
+        index = (index + 1) % total;
+        updateSlider();
+    }, 5000); // Auto slide every 5s
+});
+
+// Category switching every 20s
+let catIndex = 0;
+const categories = document.querySelectorAll('.category');
+setInterval(() => {
+    categories[catIndex].classList.remove('active');
+    catIndex = (catIndex + 1) % categories.length;
+    categories[catIndex].classList.add('active');
+}, 20000); // Switch category every 20s
+
+// Full Screen Offer every 30s
+const fullOffer = document.getElementById('fullscreenOffer');
+setInterval(() => {
+    fullOffer.style.display = 'flex';
+    setTimeout(() => {
+        fullOffer.style.display = 'none';
+    }, 6000); // Show for 6s then hide
+}, 30000); // Appear every 30s
+</script>
+
+</body>
+</html>

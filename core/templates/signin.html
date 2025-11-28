@@ -1,0 +1,219 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>FacePay - Sign In</title>
+<style>
+/* --- background + glass container from previous design --- */
+body {
+  font-family: Arial, sans-serif;
+  background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  overflow: hidden;
+  margin: 0;
+}
+.container {
+  background: rgba(255,255,255,0.06);
+  padding: 28px;
+  border-radius: 16px;
+  width: 420px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+input, button {
+  margin: 10px 0;
+  padding: 12px;
+  width: 92%;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+}
+input { background: rgba(255,255,255,0.08); color: #fff; }
+input::placeholder { color: #ddd; }
+button { cursor: pointer; font-weight: 700; }
+#captureBtn { background:#007bff; color:#fff; display:none; }
+#checkMobile { background:#48bb78; color:#fff; }
+#paymentBtn { background: #0b9444; color: #fff; display:none; }
+#signupBtn { background: #ff7a00; color: #fff; display:none; }
+#video { width: 250px; height: 250px; border-radius: 50%; display: none; margin: 10px auto; object-fit: cover; }
+.message { margin-top: 12px; font-size: 14px; min-height: 22px; color: #ffd; }
+.error { color: #ffb3b3; }
+.success { color: #b7f0c5; }
+.glow { position: absolute; bottom:-180px; left:50%; transform:translateX(-50%); width:120%; height:360px; background: radial-gradient(circle at center, rgba(0,122,255,0.6), transparent 70%); filter: blur(100px); border-radius:50%; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Sign In</h2>
+
+  <input id="mobile" type="text" maxlength="10" placeholder="Enter mobile number" />
+  <button id="checkMobile">Enter</button>
+
+  <p id="aadhaarInfo" class="message"></p>
+
+  <!-- Video preview and canvas -->
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas" width="250" height="250" style="display:none;"></canvas>
+
+  <div>
+    <button id="captureBtn">Capture Face</button>
+    <button id="paymentBtn">Make Payment</button>
+    <button id="signupBtn">Sign Up</button>
+  </div>
+
+  <p id="message" class="message"></p>
+</div>
+
+<div class="glow"></div>
+
+<script>
+/* ===== utilities ===== */
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+}
+const csrftoken = getCookie('csrftoken');
+const SIGNIN_URL = "{% url 'signin' %}";  // correct URL to post to
+
+/* ===== elements ===== */
+const mobileInput = document.getElementById('mobile');
+const checkBtn = document.getElementById('checkMobile');
+const aadhaarInfo = document.getElementById('aadhaarInfo');
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const captureBtn = document.getElementById('captureBtn');
+const paymentBtn = document.getElementById('paymentBtn');
+const signupBtn = document.getElementById('signupBtn');
+const messageEl = document.getElementById('message');
+
+let mobileNumber = '';
+let mediaStream = null;
+
+/* ===== helper to POST and parse JSON ===== */
+async function postForm(dataObj) {
+  try {
+    const response = await fetch(SIGNIN_URL, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': csrftoken,
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+      },
+      body: new URLSearchParams(dataObj)
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error('Server error: ' + response.status + ' — ' + text.slice(0,200));
+    }
+    return await response.json();
+  } catch (err) {
+    throw err;
+  }
+}
+
+/* ===== Step 1: check mobile ===== */
+checkBtn.addEventListener('click', async () => {
+  messageEl.textContent = '';
+  aadhaarInfo.textContent = '';
+  signupBtn.style.display = 'none';
+  paymentBtn.style.display = 'none';
+  captureBtn.style.display = 'none';
+  video.style.display = 'none';
+
+  mobileNumber = mobileInput.value.trim();
+  if (!/^\d{10}$/.test(mobileNumber)) {
+    messageEl.textContent = 'Enter a valid 10-digit mobile number';
+    messageEl.className = 'message error';
+    return;
+  }
+
+  try {
+    const data = await postForm({ step: 'check_mobile', mobile_number: mobileNumber });
+    if (data.exists) {
+      aadhaarInfo.textContent = 'Aadhaar: ' + data.aadhaar;
+      aadhaarInfo.className = 'message';
+      startCamera();  // start camera so customer can capture
+    } else {
+      aadhaarInfo.textContent = 'Mobile not registered. Please sign up.';
+      aadhaarInfo.className = 'message error';
+      signupBtn.style.display = 'inline-block';
+      signupBtn.onclick = () => { window.location.href = "{% url 'signup' %}"; };
+    }
+  } catch (err) {
+    console.error(err);
+    messageEl.textContent = 'Network/server error. Open DevTools and check console/network.';
+    messageEl.className = 'message error';
+  }
+});
+
+/* ===== Start camera ===== */
+async function startCamera() {
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = mediaStream;
+    video.style.display = 'block';
+    captureBtn.style.display = 'inline-block';
+  } catch (err) {
+    console.error('Camera error', err);
+    messageEl.textContent = 'Cannot access camera — check permissions.';
+    messageEl.className = 'message error';
+  }
+}
+
+/* ===== capture and validate face ===== */
+captureBtn.addEventListener('click', async () => {
+  messageEl.textContent = '';
+  // draw to canvas
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const dataURL = canvas.toDataURL('image/png');
+
+  try {
+    const data = await postForm({ step: 'validate_face', mobile_number: mobileNumber, face_image: dataURL });
+    if (data.face_valid) {
+      messageEl.textContent = 'Face validated ✅';
+      messageEl.className = 'message success';
+      paymentBtn.style.display = 'inline-block';
+    } else {
+      messageEl.textContent = 'Face validation failed ❌: ' + (data.reason || 'unknown');
+      messageEl.className = 'message error';
+    }
+  } catch (err) {
+    console.error(err);
+    messageEl.textContent = 'Error validating face. See console.';
+    messageEl.className = 'message error';
+  }
+});
+
+/* ===== make payment ===== */
+paymentBtn.addEventListener('click', async () => {
+  messageEl.textContent = 'Processing payment...';
+  messageEl.className = 'message';
+  try {
+    const data = await postForm({ step: 'make_payment', mobile_number: mobileNumber });
+    if (data.payment === 'success') {
+      messageEl.textContent = 'Transaction Successful ✅ Redirecting to home...';
+      messageEl.className = 'message success';
+      setTimeout(() => window.location.href = "{% url 'home' %}", 2000);
+    } else {
+      messageEl.textContent = 'Transaction Declined ❌: ' + (data.reason || 'unknown');
+      messageEl.className = 'message error';
+    }
+  } catch (err) {
+    console.error(err);
+    messageEl.textContent = 'Payment error. See console.';
+    messageEl.className = 'message error';
+  }
+});
+</script>
+</body>
+</html>
